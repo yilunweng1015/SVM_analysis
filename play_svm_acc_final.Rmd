@@ -1,0 +1,3340 @@
+---
+title: "Untitled"
+author: "Rachel Weng"
+date: "7/13/2020"
+output: html_document
+---
+```{r, warning=FALSE, message=FALSE}
+library(dplyr)
+library(tidyr)
+library(reshape)
+library(reshape2)
+library(ISLR)
+library(caret)
+library(Hmisc)
+library(permute)
+## Import data
+data <- read.csv("~/Desktop/play/decoding/play_a_001_ready.csv")
+click_all <- read.csv("~/Desktop/play/decoding/play_all_click.csv")
+
+## Choose one participant's click
+click <- click_all[click_all$Subject==1, ]
+## Merge data
+alldata <- (merge(data, click, by = 'trial'))
+alldata <- subset(alldata, condition=="mod"|condition=="Inst",select=c(1:31,34))
+alldata$click_code = factor(alldata$click_code, levels = c(0, 1))
+
+## split the time points
+data_split <- split(alldata, alldata$timepoint)
+new_names <- c("t1","t2","t3","t4","t5","t6","t7","t8","t9","t10","t11","t12","t13","t14","t15","t16","t17","t18","t19","t20",
+               "t21","t22","t23","t24","t25","t27","t28","t29","t30","t31","t32","t33","t34","t35","t36","t37","t38",
+               "t39","t40","t41","t42","t43","t44","t45","t46","t47","t48","t49","t50","t51","t52","t53","t54","t55",
+               "t56","t57","t58","t59","t60","t61","t62","t63","t64","t65","t66","t67","t68","t69","t70","t71","t72",
+               "t73","t74","t75","t76","t77","t78","t79","t80","t81","t82","t83","t84","t85","t86","t87","t88","t89",
+               "t90","t91","t92","t93","t94","t95","t96","t97","t98","t99","t100","t101","t102","t103","t104","t105","t106",
+               "t107","t108","t109","t110","t111","t112","t113","t114","t115","t116","t117","t118","t119","t120","t121",
+               "t122","t123","t124","t125","t126","t127","t128","t129","t130","t131","t132","t133","t134","t135","t136",
+               "t137","t138","t139","t140","t141","t142","t143","t144","t145","t146")
+for (i in 1:length(data_split)) {
+  assign(new_names[i], data_split[[i]])
+}
+
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+df = t1
+perm_num <- 50 # The Number of permutations
+res <- numeric(length=perm_num) # Initialize a matrix to store the permutation data
+N <- length(df$click_code)
+y <- matrix(0, nrow=N, ncol=perm_num)
+
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t1_p <- mat$overall[1]
+
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t1_p)
+pvalue <- wtest_res$p.value
+t1_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t2
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t2_p <- mat$overall[1][1]
+
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t2_p)
+pvalue <- wtest_res$p.value
+t2_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+
+df = t3
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t3_p <- mat$overall[1]
+
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t2_p)
+pvalue <- wtest_res$p.value
+t2_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+
+df = t4
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t4_p <- mat$overall[1]
+
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t2_p)
+pvalue <- wtest_res$p.value
+t2_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+
+df = t5
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t5_p <- mat$overall[1]
+
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t5_p)
+pvalue <- wtest_res$p.value
+t5_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t6
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t6_p <- mat$overall[1]
+
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t6_p)
+pvalue <- wtest_res$p.value
+t6_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t7
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t7_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t7_p)
+pvalue <- wtest_res$p.value
+t7_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+
+df = t8
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t8_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t8_p)
+pvalue <- wtest_res$p.value
+t8_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+
+df = t9
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t9_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t9_p)
+pvalue <- wtest_res$p.value
+t9_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+
+df = t10
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t10_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t10_p)
+pvalue <- wtest_res$p.value
+t10_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+
+df = t11
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t11_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t11_p)
+pvalue <- wtest_res$p.value
+t11_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t12
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t12_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t12_p)
+pvalue <- wtest_res$p.value
+t12_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+
+df = t13
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t13_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t13_p)
+pvalue <- wtest_res$p.value
+t13_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+
+df = t14
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t14_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t14_p)
+pvalue <- wtest_res$p.value
+t14_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+
+df = t15
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t15_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t15_p)
+pvalue <- wtest_res$p.value
+t15_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+
+
+
+
+
+
+df = t16
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t16_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t16_p)
+pvalue <- wtest_res$p.value
+t16_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t17
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t17_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t17_p)
+pvalue <- wtest_res$p.value
+t17_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+df = t18
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t18_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t18_p)
+pvalue <- wtest_res$p.value
+t18_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+df = t19
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t19_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t19_p)
+pvalue <- wtest_res$p.value
+t19_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t20
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t20_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t20_p)
+pvalue <- wtest_res$p.value
+t20_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t21
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t21_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t21_p)
+pvalue <- wtest_res$p.value
+t21_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t22
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t22_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t22_p)
+pvalue <- wtest_res$p.value
+t22_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t23
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t23_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t23_p)
+pvalue <- wtest_res$p.value
+t23_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t24
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t24_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t24_p)
+pvalue <- wtest_res$p.value
+t24_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+
+df = t25
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t25_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t25_p)
+pvalue <- wtest_res$p.value
+t25_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t26
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE)
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t26_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t26_p)
+pvalue <- wtest_res$p.value
+t26_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t27
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t27_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t27_p)
+pvalue <- wtest_res$p.value
+t27_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t28
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t28_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t28_p)
+pvalue <- wtest_res$p.value
+t28_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t29
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t29_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t29_p)
+pvalue <- wtest_res$p.value
+t29_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t30
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t30_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t30_p)
+pvalue <- wtest_res$p.value
+t30_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t31
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t31_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t31_p)
+pvalue <- wtest_res$p.value
+t31_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t32
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t32_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t32_p)
+pvalue <- wtest_res$p.value
+t32_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t33
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t33_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t33_p)
+pvalue <- wtest_res$p.value
+t33_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t34
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t34_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t34_p)
+pvalue <- wtest_res$p.value
+t34_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t35
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t35_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t35_p)
+pvalue <- wtest_res$p.value
+t35_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t36
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t36_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t36_p)
+pvalue <- wtest_res$p.value
+t36_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+
+df = t37
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t37_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t37_p)
+pvalue <- wtest_res$p.value
+t37_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t38
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t38_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t38_p)
+pvalue <- wtest_res$p.value
+t38_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t39
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t39_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t39_p)
+pvalue <- wtest_res$p.value
+t39_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t40
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t40_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t40_p)
+pvalue <- wtest_res$p.value
+t40_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t41
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t41_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t41_p)
+pvalue <- wtest_res$p.value
+t41_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t42
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t42_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t42_p)
+pvalue <- wtest_res$p.value
+t42_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t43
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t43_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t43_p)
+pvalue <- wtest_res$p.value
+t43_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t44
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t44_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t44_p)
+pvalue <- wtest_res$p.value
+t44_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+
+df = t45
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t45_p <- mat$overall[1]
+# Permutation test
+for (i in 1:perm_num) { 
+  y[,i] <- sample(df$click_code, size= 35, replace = FALSE) # Shuffle the click responses
+  intrain <- createDataPartition(y = y[,i], p=0.7, list = FALSE) # Data partition
+  training <- df[intrain,]
+  testing <- df[-intrain,]
+  trctrl <- trainControl(method = "LOOCV") # Leave-one-out method
+  svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                      trControl=trctrl,
+                      preProcess=c("center","scale"))
+  pred <- predict(svm_Linear,testing)
+  mat <- confusionMatrix(pred, testing$click_code)
+  res[i] <- mat$overall }
+wtest_res <- wilcox.test(res, mu = t45_p)
+pvalue <- wtest_res$p.value
+t45_test <- Hmisc::format.pval(pvalue,nsmall=3)
+
+test_result <- rbind(t1_test,t2_test,t3_test,t4_test,t5_test,t6_test,t7_test,t8_test,t9_test,t10_test,t11_test,t12_test,t13_test,t14_test,t15_test,
+                     t16_test,t17_test,t18_test,t19_test,t20_test,t21_test,t22_test,t23_test,t24_test,t25_test,t26_test,t27_test,t28_test,t29_test,t30_test,
+                     t31_test,t32_test,t33_test,t34_test,t35_test,t36_test,t37_test,t38_test,t39_test,t40_test,t41_test,t42_test,t43_test,t44_test,t45_test)
+```
+
+
+
+
+
+```{r}
+df = t46
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t46_p <- mat$overall[1]
+
+
+df = t47
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t47_p <- mat$overall[1]
+
+df = t48
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t48_p <- mat$overall[1]
+
+df = t49
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t49_p <- mat$overall[1]
+
+df = t50
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t50_p <- mat$overall[1]
+
+df = t51
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t51_p <- mat$overall[1]
+
+df = t52
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t52_p <- mat$overall[1]
+
+df = t53
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t53_p <- mat$overall[1]
+
+df = t54
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t54_p <- mat$overall[1]
+
+df = t55
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t55_p <- mat$overall[1]
+
+df = t56
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t56_p <- mat$overall[1]
+
+df = t57
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t57_p <- mat$overall[1]
+
+df = t58
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t58_p <- mat$overall[1]
+
+df = t59
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t59_p <- mat$overall[1]
+
+df = t60
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t60_p <- mat$overall[1]
+
+df = t61
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t61_p <- mat$overall[1]
+
+df = t62
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t62_p <- mat$overall[1]
+
+df = t63
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t63_p <- mat$overall[1]
+
+df = t64
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t64_p <- mat$overall[1]
+
+df = t65
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t65_p <- mat$overall[1]
+
+
+df = t66
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t66_p <- mat$overall[1]
+
+df = t67
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t67_p <- mat$overall[1]
+
+df = t68
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t68_p <- mat$overall[1]
+
+df = t69
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t69_p <- mat$overall[1]
+
+df = t70
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t70_p <- mat$overall[1]
+
+df = t71
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t71_p <- mat$overall[1]
+
+df = t72
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t72_p <- mat$overall[1]
+
+df = t73
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t73_p <- mat$overall[1]
+
+df = t74
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t74_p <- mat$overall[1]
+
+df = t75
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t75_p <- mat$overall[1]
+
+df = t76
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t76_p <- mat$overall[1]
+
+df = t77
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t77_p <- mat$overall[1]
+
+df = t78
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t78_p <- mat$overall[1]
+
+df = t79
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t79_p <- mat$overall[1]
+
+df = t80
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t80_p <- mat$overall[1]
+
+df = t81
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t81_p <- mat$overall[1]
+
+df = t82
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t82_p <- mat$overall[1]
+
+df = t83
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t83_p <- mat$overall[1]
+
+df = t84
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t84_p <- mat$overall[1]
+
+df = t85
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t85_p <- mat$overall[1]
+
+df = t86
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t86_p <- mat$overall[1]
+
+df = t87
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t87_p <- mat$overall[1]
+
+df = t88
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t88_p <- mat$overall[1]
+
+df = t89
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t89_p <- mat$overall[1]
+
+df = t90
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t90_p <- mat$overall[1]
+
+df = t91
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t91_p <- mat$overall[1]
+
+df = t92
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t92_p <- mat$overall[1]
+
+df = t93
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t93_p <- mat$overall[1]
+
+df = t94
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t94_p <- mat$overall[1]
+
+df = t95
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t95_p <- mat$overall[1]
+
+df = t96
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t96_p <- mat$overall[1]
+
+df = t97
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t97_p <- mat$overall[1]
+
+df = t98
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t98_p <- mat$overall[1]
+
+df = t99
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t99_p <- mat$overall[1]
+
+df = t100
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t100_p <- mat$overall[1]
+
+df = t101
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t101_p <- mat$overall[1]
+
+df = t102
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t102_p <- mat$overall[1]
+
+df = t103
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t103_p <- mat$overall[1]
+
+df = t104
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t104_p <- mat$overall[1]
+
+df = t105
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t105_p <- mat$overall[1]
+
+df = t106
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t106_p <- mat$overall[1]
+
+df = t107
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t107_p <- mat$overall[1]
+
+df = t108
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t108_p <- mat$overall[1]
+
+df = t109
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t109_p <- mat$overall[1]
+
+df = t110
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t110_p <- mat$overall[1]
+
+df = t111
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t111_p <- mat$overall[1]
+
+df = t112
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t112_p <- mat$overall[1]
+
+df = t113
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t113_p <- mat$overall[1]
+
+df = t114
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t114_p <- mat$overall[1]
+
+df = t115
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t115_p <- mat$overall[1]
+
+df = t116
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t116_p <- mat$overall[1]
+
+df = t117
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t117_p <- mat$overall[1]
+
+df = t118
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t118_p <- mat$overall[1]
+
+df = t119
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t119_p <- mat$overall[1]
+
+df = t120
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t120_p <- mat$overall[1]
+
+df = t121
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t121_p <- mat$overall[1]
+
+df = t122
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t122_p <- mat$overall[1]
+
+
+df = t123
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t123_p <- mat$overall[1]
+
+df = t124
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t124_p <- mat$overall[1]
+
+df = t125
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t125_p <- mat$overall[1]
+
+df = t126
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t126_p <- mat$overall[1]
+
+df = t127
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t127_p <- mat$overall[1]
+
+df = t128
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t128_p <- mat$overall[1]
+
+df = t129
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t129_p <- mat$overall[1]
+
+df = t130
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t130_p <- mat$overall[1]
+
+df = t131
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t131_p <- mat$overall[1]
+
+df = t132
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t132_p <- mat$overall[1]
+
+df = t133
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t133_p <- mat$overall[1]
+
+df = t134
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t134_p <- mat$overall[1]
+
+df = t135
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t135_p <- mat$overall[1]
+
+df = t136
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t136_p <- mat$overall[1]
+
+df = t137
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t137_p <- mat$overall[1]
+
+df = t138
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t138_p <- mat$overall[1]
+
+df = t139
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t139_p <- mat$overall[1]
+
+df = t140
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t140_p <- mat$overall[1]
+
+df = t141
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t141_p <- mat$overall[1]
+
+df = t142
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t142_p <- mat$overall[1]
+
+df = t143
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t143_p <- mat$overall[1]
+
+df = t144
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t144_p <- mat$overall[1]
+
+df = t145
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t145_p <- mat$overall[1]
+
+df = t146
+## data slicing
+# the "y" parameter takes the value of variable according to which data needs to be partitioned
+# p = 0.7 means that data split should be done in 70:30 ratio
+set.seed(42)
+intrain <- createDataPartition(y = df$click_code, p= 0.7, list = FALSE) 
+training <- df[intrain,]
+testing <- df[-intrain,]
+## training the SVM model
+trctrl <- trainControl(method = "LOOCV")
+svm_Linear <- train(click_code ~., data = training, method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess=c("center","scale"))
+pred <- predict(svm_Linear,testing)
+mat <- confusionMatrix(pred, testing$click_code)
+t146_p <- mat$overall[1]
+
+all <- rbind(t1_p,t2_p,t3_p,t4_p,t5_p,t6_p,t7_p,t8_p,t9_p,t10_p,t11_p,t12_p,t13_p,t14_p,t15_p,t16_p,t17_p,t18_p,t19_p,
+                 t20_p,t21_p,t22_p,t23_p,t24_p,t25_p,t26_p,t27_p,t28_p,t29_p,t30_p,t31_p,t32_p,t33_p,t34_p,t35_p,t36_p,
+                 t37_p,t38_p,t39_p,t40_p,t41_p,t42_p,t43_p,t44_p,t45_p,t46_p,t47_p,t48_p,t49_p,t50_p,t51_p,t52_p,t53_p,
+                 t54_p,t55_p,t56_p,t57_p,t58_p,t59_p,t60_p,t61_p,t62_p,t63_p,t64_p,t65_p,t66_p,t67_p,t68_p,t69_p,t70_p,
+                 t71_p,t72_p,t73_p,t74_p,t75_p,t76_p,t77_p,t78_p,t79_p,t80_p,t81_p,t82_p,t83_p,t84_p,t85_p,t86_p,t87_p,
+                 t88_p,t89_p,t90_p,t91_p,t92_p,t93_p,t94_p,t95_p,t96_p,t97_p,t98_p,t99_p,t100_p,t101_p,t102_p,t103_p,
+                 t104_p,t105_p,t106_p,t107_p,t108_p,t109_p,t110_p,t111_p,t112_p,t113_p,t114_p,t115_p,t116_p,t117_p,
+                 t118_p,t119_p,t120_p,t121_p,t122_p,t123_p,t124_p,t125_p,t126_p,t127_p,t128_p,t129_p,t130_p,t131_p,
+                 t132_p,t133_p,t134_p,t135_p,t136_p,t137_p,t138_p,t139_p,t140_p,t141_p,t142_p,t143_p,t144_p,t145_p,t146_p)
+
+write.csv(all,"play_a_023_accuracy.csv", row.names = TRUE)
+```
